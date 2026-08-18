@@ -39,6 +39,32 @@ const year = new Date().getFullYear();
       </div>
     </div>
 
+    <div class="popup-ad" id="popup-ad" role="dialog" aria-label="Advertisement" hidden>
+      <div class="popup-titlebar">
+        <span>💘 MEET LOCAL GOLFERS 💘</span>
+        <button id="popup-close" class="popup-close" type="button" aria-label="Close advertisement">✕</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-headline blink-text">SINGLE GOLFERS IN YOUR AREA WANT TO PLAY A ROUND WITH YOU!!!</div>
+        <div class="popup-sub">🔥 3 golfers waiting near you right now 🔥</div>
+        <div class="popup-cta">👉 CLICK HERE TO MEET THEM 👈</div>
+        <div class="popup-fine">*golfers are hypothetical. no golfers were found. no golfers exist.</div>
+      </div>
+    </div>
+
+    <div class="popup-ad" id="popup-ad-2" role="dialog" aria-label="Advertisement" hidden>
+      <div class="popup-titlebar">
+        <span>🧽 SQUEAKY CLEAN BALLS 🧽</span>
+        <button id="popup-close-2" class="popup-close" type="button" aria-label="Close advertisement">✕</button>
+      </div>
+      <div class="popup-body">
+        <div class="popup-headline blink-text">TIRED OF DIRTY BALLS RUINING YOUR ROUND?</div>
+        <div class="popup-sub">Introducing the Ruthven Ball Buffer 3000™ — just insert your balls and let it work its magic</div>
+        <div class="popup-cta">👉 GET YOUR BALLS CLEANED TODAY 👈</div>
+        <div class="popup-fine">*results may vary. balls not included. we are only talking about golf balls.</div>
+      </div>
+    </div>
+
     <audio
       id="bagpipes"
       src="https://www.bagpipes-and-celtic-music.com/Hornpipe%20&%20%20Jig%20-%20PIPES.mp3"
@@ -96,19 +122,37 @@ const year = new Date().getFullYear();
     </footer>
 
     <script>
-      // Background pipes, gated behind a click - browsers block unmuted
-      // autoplay anyway, and "click here for music" is period-correct.
+      // Autoplay policies block unmuted audio before the visitor has done
+      // anything on the page - so it starts muted (allowed) and unmutes
+      // itself the instant they click, scroll or press a key, which on a
+      // real page is almost immediately.
       const pipes = document.getElementById('bagpipes') as HTMLAudioElement | null;
       const pipesBtn = document.getElementById('bagpipes-toggle');
       if (pipes && pipesBtn) {
+        pipes.play().catch(() => {});
+
+        const unlock = () => {
+          pipes.muted = false;
+          pipes.play().catch(() => {});
+        };
+        (['pointerdown', 'keydown', 'scroll', 'touchstart'] as const).forEach((evt) =>
+          document.addEventListener(evt, unlock, { once: true, passive: true }),
+        );
+
         pipesBtn.addEventListener('click', () => {
-          if (pipes.paused) {
+          if (pipes.muted || pipes.paused) {
+            pipes.muted = false;
             pipes.play().catch(() => {});
           } else {
             pipes.pause();
           }
         });
-        pipes.addEventListener('play', () => (pipesBtn.textContent = '🔊 Stop the Pipes'));
+        pipes.addEventListener('play', () => {
+          if (!pipes.muted) pipesBtn.textContent = '🔊 Stop the Pipes';
+        });
+        pipes.addEventListener('volumechange', () => {
+          if (!pipes.muted && !pipes.paused) pipesBtn.textContent = '🔊 Stop the Pipes';
+        });
         pipes.addEventListener('pause', () => (pipesBtn.textContent = '🎶 Play the Pipes'));
       }
     </script>
@@ -119,6 +163,29 @@ const year = new Date().getFullYear();
       if (counter) {
         const base = 1337 + Math.floor(Math.random() * 8000);
         counter.textContent = String(base).padStart(6, '0');
+      }
+    </script>
+
+    <script>
+      // Two obnoxious popup ads that only show up on the odd page load -
+      // and close properly the first time you click, like a normal button.
+      const setupPopup = (popupId: string, closeId: string) => {
+        const popup = document.getElementById(popupId);
+        const closeBtn = document.getElementById(closeId);
+        if (!popup || !closeBtn) return;
+
+        closeBtn.addEventListener('click', () => popup.setAttribute('hidden', ''));
+        popup.removeAttribute('hidden');
+      };
+
+      const ads: [string, string][] = [
+        ['popup-ad', 'popup-close'],
+        ['popup-ad-2', 'popup-close-2'],
+      ];
+
+      if (Math.random() < 0.85) {
+        const [popupId, closeId] = ads[Math.floor(Math.random() * ads.length)];
+        setTimeout(() => setupPopup(popupId, closeId), 3500);
       }
     </script>
 
@@ -364,6 +431,87 @@ const year = new Date().getFullYear();
         .navtable td {
           flex: 1 1 33%;
           border-bottom: 1px solid #999;
+        }
+      }
+      .popup-ad {
+        position: fixed;
+        top: 18%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        width: min(340px, 86vw);
+        border: 4px solid #000;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        animation: flash-border 0.4s steps(1) infinite;
+      }
+      .popup-ad[hidden] {
+        display: none;
+      }
+      .popup-titlebar {
+        background: linear-gradient(90deg, #ff2fd0, #ff8a00);
+        color: #fff;
+        font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .popup-close {
+        position: relative;
+        background: #fff;
+        color: #000;
+        border: 2px outset #ccc;
+        font-weight: 900;
+        font-size: 12px;
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+      }
+      .popup-body {
+        position: relative;
+        background: repeating-linear-gradient(45deg, #fff59d 0 10px, #fff 10px 20px);
+        padding: 18px 16px 14px;
+        text-align: center;
+      }
+      .popup-headline {
+        font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+        font-weight: 700;
+        font-size: 16px;
+        color: #d6006c;
+        text-shadow: 1px 1px 0 #fff;
+        margin-bottom: 10px;
+      }
+      .popup-sub {
+        font-family: var(--sans);
+        font-size: 12px;
+        font-weight: 700;
+        color: #7a1620;
+        margin-bottom: 14px;
+      }
+      .popup-cta {
+        display: inline-block;
+        background: linear-gradient(180deg, #39ff14, #0a8f0a);
+        color: #003300;
+        font-family: var(--sans);
+        font-weight: 900;
+        font-size: 13px;
+        padding: 8px 16px;
+        border: 3px outset #fff;
+      }
+      .popup-fine {
+        margin-top: 12px;
+        font-family: var(--sans);
+        font-size: 8px;
+        color: #666;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .popup-ad {
+          animation: none;
+        }
+        .popup-headline {
+          animation: none !important;
         }
       }
     </style>
