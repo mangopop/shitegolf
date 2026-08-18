@@ -1,0 +1,8 @@
+{
+  "year": 2021,
+  "venue": " Cupar",
+  "location": "Scotland",
+  "course": "cupar-golf-club",
+  "participants": ["chris-ruthven", "patrick-ruthven", "aidan-ruthven", "nicholas-ruthven"],
+  "tankard": { "winner": "aidan-ruthven" }
+}

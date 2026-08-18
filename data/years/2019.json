@@ -1,0 +1,8 @@
+{
+  "year": 2019,
+  "venue": " Carrick Knowe",
+  "location": "Scotland",
+  "course": "carrick-knowe",
+  "participants": ["chris-ruthven", "patrick-ruthven", "aidan-ruthven", "nicholas-ruthven"],
+  "tankard": { "winner": "patrick-ruthven" }
+}

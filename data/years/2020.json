@@ -1,0 +1,9 @@
+{
+  "year": 2020,
+  "venue": "Drumoig",
+  "location": "Scotland",
+  "course": "drumoig",
+  "groupPhoto": "2020-group.jpeg",
+  "participants": ["chris-ruthven", "patrick-ruthven", "aidan-ruthven", "nicholas-ruthven"],
+  "tankard": { "winner": "chris-ruthven" }
+}

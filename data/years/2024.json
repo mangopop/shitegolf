@@ -1,0 +1,8 @@
+{
+  "year": 2024,
+  "venue": "Edzell",
+  "location": "Scotland",
+  "course": "edzell",
+  "participants": ["chris-ruthven", "patrick-ruthven", "aidan-ruthven", "nicholas-ruthven"],
+  "tankard": { "winner": "patrick-ruthven" }
+}

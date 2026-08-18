@@ -1,0 +1,25 @@
+---
+// The goat-and-clubs crest, or its placeholder until the file arrives.
+import { images } from '../config';
+import { photo } from '../lib/paths';
+
+interface Props {
+  size: number;
+}
+const { size } = Astro.props;
+---
+
+{
+  images.crest ? (
+    <img
+      src={photo(images.crest)}
+      alt="The Ruthven family crest - a goat above crossed golf clubs"
+      width={size}
+      style={`width:${size}px;height:auto;margin:0 auto;`}
+    />
+  ) : (
+    <div class="placeholder-box" style={`width:${size}px;height:${Math.round(size * 1.15)}px;margin:0 auto;`}>
+      Goat &amp;<br />clubs<br />crest
+    </div>
+  )
+}

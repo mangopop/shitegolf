@@ -1,0 +1,284 @@
+---
+import Base from '../layouts/Base.astro';
+
+// The official rules, verbatim as written by the committee (emoji included -
+// the tone is the content). Only the year is dropped from the title so the
+// page never goes stale.
+const rules = [
+  {
+    emoji: '🚧',
+    title: 'Out of Bounds (OB) or Lost Ball – From the Tee',
+    body: `If your tee shot is out of bounds or you believe it may be lost, you have two options:
+
+Option A: Play a provisional ball from the tee. This will be your 3rd shot.
+
+Option B: Walk to where you believe your ball crossed out of bounds or was lost, drop a ball there, add two penalty strokes, and play your 4th shot.`,
+  },
+  {
+    emoji: '🏌️',
+    title: 'Out of Bounds (OB) or Lost Ball – Anywhere Else',
+    body: `If a shot from the fairway, rough or anywhere else goes out of bounds or is believed to be lost, walk to where you believe the ball crossed out of bounds or was lost, drop a ball there, add two penalty strokes on top of the strokes you made, and continue play.`,
+  },
+  {
+    emoji: '🔍',
+    title: 'Original Ball Found After Taking a Drop',
+    body: `If you believe your ball is lost or out of bounds and take a drop, but then find your original ball after hitting another
+
+• Pick up the dropped ball.
+• Continue with your original ball.
+
+Please use common sense and keep play moving.`,
+  },
+  {
+    emoji: '⛳',
+    title: 'Gimmes',
+    body: `Any putt inside the length of your putter shaft (excluding the grip) is automatically considered holed.
+
+No need to putt these out unless you want to. If you try to put it and miss (when it's a gimmie), don't worry, it's still considered holed.`,
+  },
+  {
+    emoji: '🎯',
+    title: 'Marking & Lining Up Your Ball',
+    body: `You only need to mark your ball on the green if:
+
+• You want to clean it.
+• It is in another player's line.
+• Another player asks you to.
+• You want to line your ball up before putting.
+
+If you're lining your ball up, either:
+
+• Use a ball marker, or
+• Hold the ball in position with the head of your putter while you rotate it.`,
+  },
+  {
+    emoji: '🏖️',
+    title: 'Bunkers',
+    body: `If you accidentally ground your club behind or next to the ball before playing your shot, don't worry.
+
+Just play on. No penalty.`,
+  },
+  {
+    emoji: '🌿',
+    title: 'Loose Twigs, Leaves & Stones',
+    body: `If you accidentally move your ball while removing a loose twig, leaf, stone or other loose natural object, simply play the ball from where it comes to rest.
+
+No penalty.`,
+  },
+  {
+    emoji: '👌',
+    title: 'Accidental Nudge',
+    body: `If you accidentally tap or move your ball by an inch, while addressing it or preparing to play your shot, simply play it from where it comes to rest.
+
+No penalty.`,
+  },
+  {
+    emoji: '🌱',
+    title: 'Divots',
+    body: `If your ball finishes in a divot in the fairway, you may move it up to 6 inches, no nearer the hole, to give yourself a better lie.`,
+  },
+  {
+    emoji: '🛺',
+    title: 'Cart Paths & Gravel Paths',
+    body: `If your ball is on a cart path or gravel path, or the path interferes with your stance or swing, you receive free relief.
+
+Take the nearest point of complete relief (no nearer the hole) and drop within one club length.
+
+No penalty.`,
+  },
+  {
+    emoji: '🚮',
+    title: 'Man-Made Objects',
+    body: `If an immovable man-made object (such as a bin, sprinkler head, distance marker, drain cover, bench or fixed sign) interferes with your stance or swing, you receive free relief.
+
+Take the nearest point of complete relief (no nearer the hole) and drop within one club length.
+
+No penalty.`,
+  },
+  {
+    emoji: '💥',
+    title: "Hitting Another Player's Ball",
+    body: `If your ball accidentally hits another player's ball on the green, there is no penalty.
+
+Replace the ball that was moved as close as possible to where it originally lay and continue play.`,
+  },
+  {
+    emoji: '⏱️',
+    title: 'Ready Golf',
+    body: `Play when you're ready, provided it's safe to do so.
+
+There's no need to wait for the player furthest from the hole if you're ready first.`,
+  },
+  {
+    emoji: '🚶',
+    title: 'Keep the Game Moving',
+    body: `Please keep pace with the group in front.
+
+Don't spend too long searching for balls (2 minutes) or reading putts. If you're unsure, use the Ruthven Rules, keep moving and enjoy the day.`,
+  },
+  {
+    emoji: '😄',
+    title: 'The Golden Rule',
+    body: `If something unusual happens that isn't covered above, agree the fairest outcome with your playing partners.
+
+Most importantly, enjoy the day, have a laugh, and remember that the stories from The Ruthven Cup are often better than the scores.
+
+Good luck to everyone, and may the best golfers win. 👏🏻`,
+  },
+];
+---
+
+<Base title="Official Competition Rules — The Ruthven Cup">
+  <section>
+    <div class="measure">
+      <div class="label reveal"><span class="thistle" aria-hidden="true"></span> 🏆 The Charter</div>
+      <h2 class="display reveal">The Ruthven Cup<br /><em>Official Competition Rules</em></h2>
+
+      <p class="tiebreak reveal">
+        In the event of a tie, there will be a three hole put off on the practice green with the midget putter. The player with the
+        lowest number of midget strokes after three holes is declared the Phallus/Tankard winner.
+      </p>
+
+      <ol class="clauses">
+        {
+          rules.map((rule, i) => (
+            <li class:list={['clause', 'reveal', { golden: i === rules.length - 1 }]}>
+              <div class="clause-no">{i + 1}</div>
+              <div class="clause-body">
+                <h3>
+                  <span class="emoji">{rule.emoji}</span> {rule.title}
+                </h3>
+                {rule.body.split('\n\n').map((para) =>
+                  para.startsWith('•') ? (
+                    <ul>
+                      {para.split('\n').map((item) => (
+                        <li>{item.replace(/^•\s*/, '')}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>{para}</p>
+                  ),
+                )}
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <style>
+    .preamble {
+      max-width: 680px;
+      font-size: 19px;
+      font-weight: 300;
+      line-height: 1.65;
+    }
+    .preamble p {
+      margin-bottom: 18px;
+    }
+    .no-handicaps {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .prizes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin: 44px 0 0;
+    }
+    .prize {
+      border: 1px solid var(--hairline);
+      padding: 36px;
+      background: linear-gradient(180deg, rgba(212, 160, 23, 0.04), transparent);
+    }
+    .prize h3 {
+      font-weight: 300;
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .prize p {
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.6;
+      opacity: 0.85;
+    }
+    .tiebreak {
+      border-left: 2px solid var(--gold);
+      padding: 18px 0 18px 28px;
+      margin: 44px 0 72px;
+      font-style: italic;
+      font-size: 17px;
+      opacity: 0.85;
+      max-width: 680px;
+    }
+
+    .clauses {
+      list-style: none;
+    }
+    .clause {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 32px;
+      padding: 44px 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .clause-no {
+      font-size: clamp(44px, 5vw, 72px);
+      font-weight: 300;
+      line-height: 0.9;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--gold);
+    }
+    .clause-body h3 {
+      font-weight: 400;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    .clause-body .emoji {
+      margin-right: 6px;
+    }
+    .clause-body p,
+    .clause-body ul {
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.65;
+      opacity: 0.85;
+      max-width: 620px;
+      margin-bottom: 14px;
+    }
+    .clause-body ul {
+      padding-left: 22px;
+    }
+    .clause.golden {
+      background: rgba(212, 160, 23, 0.06);
+      border: 1px solid var(--hairline);
+      padding: 44px 36px;
+      margin-top: 24px;
+    }
+    .clause.golden .clause-no {
+      color: var(--gold);
+      -webkit-text-stroke: 0;
+    }
+    .clause.golden .clause-body p:last-child {
+      font-style: italic;
+      color: var(--gold-bright);
+      opacity: 1;
+    }
+
+    @media (max-width: 760px) {
+      .prizes {
+        grid-template-columns: 1fr;
+      }
+      .clause {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 32px 0;
+      }
+      .clause.golden {
+        padding: 28px 20px;
+      }
+    }
+  </style>
+</Base>

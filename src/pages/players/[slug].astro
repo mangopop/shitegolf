@@ -1,0 +1,158 @@
+---
+import Base from '../../layouts/Base.astro';
+import Headshot from '../../components/Headshot.astro';
+import { loadSite, playerStats, type PlayerFile, type PlayerStats } from '../../lib/site';
+import { href } from '../../lib/paths';
+
+export function getStaticPaths() {
+  const site = loadSite();
+  return Object.entries(site.players).map(([slug, player]) => ({
+    params: { slug },
+    props: { player, stats: playerStats(site, slug) },
+  }));
+}
+
+interface Props {
+  player: PlayerFile;
+  stats: PlayerStats;
+}
+const { player, stats } = Astro.props;
+const honours = [
+  ...stats.tankardWins.map((y) => ({ year: y, prize: 'The Tankard' })),
+  ...stats.phallusWins.map((y) => ({ year: y, prize: 'The Phallus Trophy' })),
+  ...stats.longestDriveWins.map((y) => ({ year: y, prize: 'Longest Drive' })),
+  ...stats.closestToPinWins.map((y) => ({ year: y, prize: 'Closest to the Pin' })),
+].sort((a, b) => a.year - b.year);
+---
+
+<Base title={`${player.name} — The Ruthven Cup`} description={`${player.name}, ${player.family ? 'Ruthven family' : 'honoured guest'} — Ruthven Cup player bio.`}>
+  <section>
+    <div class="measure bio-grid">
+      <div class="portrait reveal tacky-hover"><Headshot player={player} /></div>
+      <div>
+        <div class="label reveal">{player.family ? 'The Family' : 'Honoured Guest'} · Since {player.since}</div>
+        <h1 class="reveal">{player.name}</h1>
+        {honours.length > 0 && (
+          <div class="honours reveal">
+            {honours.map((h) => (
+              <a class="honour" href={href(`/${h.year}/`)}>★ {h.prize} · {h.year}</a>
+            ))}
+          </div>
+        )}
+        <p class="bio reveal">{player.bio}</p>
+        <dl class="facts reveal">
+          <div>
+            <dt class="label">Years played</dt>
+            <dd>
+              {stats.yearsPlayed.map((y, i) => (
+                <>
+                  {i > 0 && ', '}
+                  <a href={href(`/${y}/`)}>{y}</a>
+                </>
+              ))}
+            </dd>
+          </div>
+          {stats.bestPoints !== null && (
+            <div>
+              <dt class="label">Best round</dt>
+              <dd>{stats.bestPoints} points</dd>
+            </div>
+          )}
+        </dl>
+        <a class="back reveal" href={href('/players/')}>← All players</a>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .bio-grid {
+      display: grid;
+      grid-template-columns: minmax(240px, 380px) 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .portrait {
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      border: 6px ridge var(--paper-2);
+      transform: rotate(-2deg);
+      filter: contrast(1.35) saturate(1.6) hue-rotate(8deg);
+    }
+    h1 {
+      font-family: Impact, Haettenschweiler, 'Arial Black', var(--sans);
+      font-weight: 900;
+      font-size: clamp(36px, 5.5vw, 70px);
+      line-height: 1;
+      margin: 16px 0 20px;
+      color: var(--red);
+      text-shadow: 2px 2px 0 var(--gold-bright), -1px -1px 0 #000;
+    }
+    .honours {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+    .honour {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      border: 1px solid var(--hairline);
+      padding: 7px 14px;
+      text-decoration: none;
+    }
+    .honour:hover {
+      animation: flash-border 0.25s steps(1) infinite;
+      background: var(--gold-bright);
+      color: #000;
+    }
+    .bio {
+      font-size: 19px;
+      font-weight: 300;
+      line-height: 1.6;
+      max-width: 560px;
+    }
+    .facts {
+      margin-top: 36px;
+      display: flex;
+      gap: 56px;
+      flex-wrap: wrap;
+    }
+    .facts dd {
+      font-size: 22px;
+      font-weight: 300;
+      margin-top: 8px;
+    }
+    .facts dd a {
+      text-decoration: none;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .facts dd a:hover {
+      animation: blink 0.4s steps(1) infinite;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 44px;
+      font-family: var(--sans);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+    }
+    .back:hover {
+      color: var(--gold-bright);
+    }
+    @media (max-width: 760px) {
+      .bio-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+      .portrait {
+        max-width: 320px;
+      }
+    }
+  </style>
+</Base>

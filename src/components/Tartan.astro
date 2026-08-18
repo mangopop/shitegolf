@@ -1,0 +1,34 @@
+---
+// Thin woven trim in the cloth's green, gold and red. When a photo of the
+// real cloth exists (config.images.cloth), it replaces the CSS weave.
+import { images } from '../config';
+import { photo } from '../lib/paths';
+---
+
+{
+  images.cloth ? (
+    <div class="tartan photo" style={`background-image:url('${photo(images.cloth)}')`} />
+  ) : (
+    <div class="tartan" />
+  )
+}
+
+<style>
+  .tartan {
+    height: 44px;
+    border-top: 3px solid #000;
+    border-bottom: 3px solid #000;
+    background-color: #d4a017;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(122, 22, 32, 0.75) 0 4px, transparent 4px 20px, rgba(10, 61, 31, 0.85) 20px 24px, transparent 24px 40px),
+      repeating-linear-gradient(90deg, rgba(122, 22, 32, 0.75) 0 4px, transparent 4px 20px, rgba(10, 61, 31, 0.85) 20px 24px, transparent 24px 40px);
+    background-size: 40px 40px;
+  }
+  .tartan.photo {
+    /* Scale the strip to the band's height and tile it sideways, so the whole
+       weave shows whatever the source image's dimensions are. */
+    background-size: auto 100%;
+    background-repeat: repeat-x;
+    background-position: center;
+  }
+</style>

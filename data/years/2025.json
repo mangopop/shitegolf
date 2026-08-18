@@ -1,0 +1,14 @@
+{
+  "year": 2025,
+  "venue": "Gullane",
+  "location": "Scotland",
+  "course": "gullane-no-2",
+  "participants": [
+    "chris-ruthven",
+    "patrick-ruthven",
+    "aidan-ruthven",
+    "nicholas-ruthven",
+    "craig-dugan"
+  ],
+  "tankard": { "winner": "craig-dugan" }
+}

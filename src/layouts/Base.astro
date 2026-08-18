@@ -1,0 +1,369 @@
+---
+import '../styles/global.css';
+import Tartan from '../components/Tartan.astro';
+import { href } from '../lib/paths';
+import { established, motto } from '../config';
+
+interface Props {
+  title: string;
+  description?: string;
+  heroNav?: boolean;
+}
+const { title, description = `The Ruthven Cup - the family golf tournament. ${motto}.` } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href={href('/favicon.png')} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="loading-screen" id="loading-screen">
+      <div class="loading-inner">
+        <div class="loading-title blink-text">⛳ LOADING SHITEGOLF.CO.UK ⛳</div>
+        <div class="fairway">
+          <span class="tee-peg">🚧</span>
+          <div class="ball-track">
+            <div class="ball-wrap">
+              <span class="golf-ball-spin" aria-hidden="true"></span>
+            </div>
+          </div>
+          <span class="hole-flag">🚩</span>
+        </div>
+        <div class="loading-pct" id="loading-pct">TEEING OFF... 0%</div>
+      </div>
+    </div>
+
+    <audio
+      id="bagpipes"
+      src="https://www.bagpipes-and-celtic-music.com/Hornpipe%20&%20%20Jig%20-%20PIPES.mp3"
+      loop
+      preload="none"
+    ></audio>
+    <audio id="transfer-noise" src={href('/audio/transfer-noise.mp3')} preload="auto"></audio>
+
+    <div class="ticker">
+      <span class="golf-ball-spin" aria-hidden="true"></span>
+      <button id="bagpipes-toggle" class="pipes-btn" type="button">🎶 Play the Pipes</button>
+      <div class="track">
+        ⛳ WELCOME TO THE #1 GOLF SITE ON THE WORLD WIDE WEB ⛳ NEW FOR {established}: TEE TIMES ONLINE ⛳ FORE!!! ⛳ ⚔️ MIDGETS OUT FOR THE TIEBREAK ⚔️ SIGN OUR GUESTBOOK ⛳ “{motto}” ⛳ 🎶 bagpipes.mp3 now looping 🎶 REFRESH OFTEN FOR THE LATEST
+        SCORES ⛳
+      </div>
+    </div>
+
+    <table class="navtable">
+      <tr>
+        <td class="flag-cell"><span class="saltire" aria-hidden="true"></span></td>
+        <td><a class="blink-text" href={href('/')}>🏌️ HOME</a></td>
+        <td><a href={href('/#honours')}>🏆 HONOURS</a></td>
+        <td><a href={href('/players/')}>⛳ PLAYERS</a></td>
+        <td><a href={href('/rules/')}>📖 RULES</a></td>
+        <td><a href={href('/#trophies')}>🚩 TROPHIES</a></td>
+        <td class="flag-cell"><span class="thistle" aria-hidden="true"></span></td>
+      </tr>
+    </table>
+
+    <slot />
+
+    <Tartan />
+
+    <div class="sponsors">
+      <div class="sponsors-label">⛳ Proud Sponsors of The Ruthven Cup ⛳</div>
+      <div class="row">
+        <div class="sponsor sp-scottishpower"><span class="mark">💦</span> ScottishOnlyFans</div>
+        <div class="sponsor sp-brewdog"><span class="mark">🐾</span> BrewDog</div>
+        <div class="sponsor sp-goldbros"><span class="mark">🧴</span> Happy nuts ball deodorant</div>
+        <div class="sponsor sp-rbs"><span class="mark">🔞</span> Pornhub</div>
+        <div class="sponsor sp-darien"><span class="mark">🧚</span> Pixie Brewery</div>
+      </div>
+    </div>
+
+    <div class="webring">
+      ⛳ PROUD MEMBER OF THE SCOTTISH GOLF WEB RING ⛳ YOU ARE GOLFER № <span id="hit-counter">004217</span> TODAY
+    </div>
+
+    <footer>
+      <div class="label">The Ruthven Cup · Est. {established} · Scotland</div>
+      <div class="footer-motto">“{motto}”</div>
+      <div class="copyright">© {year} the Ruthven family. All rights reversed.</div>
+    </footer>
+
+    <script>
+      // Background pipes, gated behind a click - browsers block unmuted
+      // autoplay anyway, and "click here for music" is period-correct.
+      const pipes = document.getElementById('bagpipes') as HTMLAudioElement | null;
+      const pipesBtn = document.getElementById('bagpipes-toggle');
+      if (pipes && pipesBtn) {
+        pipesBtn.addEventListener('click', () => {
+          if (pipes.paused) {
+            pipes.play().catch(() => {});
+          } else {
+            pipes.pause();
+          }
+        });
+        pipes.addEventListener('play', () => (pipesBtn.textContent = '🔊 Stop the Pipes'));
+        pipes.addEventListener('pause', () => (pipesBtn.textContent = '🎶 Play the Pipes'));
+      }
+    </script>
+
+    <script>
+      // Fake hit counter, because a real one would require a backend and effort.
+      const counter = document.getElementById('hit-counter');
+      if (counter) {
+        const base = 1337 + Math.floor(Math.random() * 8000);
+        counter.textContent = String(base).padStart(6, '0');
+      }
+    </script>
+
+    <script>
+      // A pointless loading screen, timed to whatever the transfer-noise
+      // clip actually runs for - because nothing says "amateur 1992
+      // website" quite like making people wait for a static page.
+      const loadingScreen = document.getElementById('loading-screen');
+      const pct = document.getElementById('loading-pct');
+      const ballWrap = loadingScreen?.querySelector('.ball-wrap') as HTMLElement | null;
+      const transferNoise = document.getElementById('transfer-noise') as HTMLAudioElement | null;
+      const FALLBACK_DURATION = 3000;
+
+      if (loadingScreen) {
+        document.body.style.overflow = 'hidden';
+
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const finish = () => {
+          document.body.style.overflow = '';
+          loadingScreen.classList.add('hide');
+          transferNoise?.pause();
+          setTimeout(() => loadingScreen.remove(), 400);
+        };
+
+        if (reduceMotion) {
+          finish();
+        } else {
+          let started = false;
+          const run = (durationMs: number) => {
+            if (started) return;
+            started = true;
+            if (ballWrap) ballWrap.style.animationDuration = `${durationMs}ms`;
+            const t0 = performance.now();
+            const tick = (t: number) => {
+              const p = Math.min((t - t0) / durationMs, 1);
+              if (pct) pct.textContent = `TEEING OFF... ${Math.round(p * 100)}%`;
+              if (p < 1) requestAnimationFrame(tick);
+              else finish();
+            };
+            requestAnimationFrame(tick);
+          };
+
+          if (transferNoise) {
+            transferNoise.play().catch(() => {});
+            const useKnownDuration = () => {
+              const d = transferNoise.duration;
+              run(Number.isFinite(d) && d > 0 ? d * 1000 : FALLBACK_DURATION);
+            };
+            if (transferNoise.readyState >= 1) {
+              useKnownDuration();
+            } else {
+              transferNoise.addEventListener('loadedmetadata', useKnownDuration, { once: true });
+              // In case the clip never loads (blocked, 404, slow network).
+              setTimeout(() => run(FALLBACK_DURATION), 800);
+            }
+          } else {
+            run(FALLBACK_DURATION);
+          }
+        }
+      }
+    </script>
+
+    <style>
+      .loading-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background-color: var(--paper-2);
+        background-image:
+          repeating-linear-gradient(90deg, #0a3d1f 0 40px, #0d5028 40px 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transition: opacity 0.4s;
+      }
+      .loading-screen.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-inner {
+        width: min(520px, 88vw);
+        text-align: center;
+      }
+      .loading-title {
+        font-family: var(--mono);
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--gold-bright);
+        text-shadow: 1px 1px 0 #000;
+        margin-bottom: 22px;
+      }
+      .fairway {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #0d7536;
+        border: 4px ridge #c0c0c0;
+        padding: 10px 14px;
+      }
+      .tee-peg,
+      .hole-flag {
+        font-size: 18px;
+        flex: none;
+      }
+      .ball-track {
+        position: relative;
+        flex: 1;
+        height: 26px;
+        background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 2px, transparent 2px 14px);
+        border-top: 1px dashed rgba(255, 255, 255, 0.6);
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.6);
+      }
+      .ball-wrap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        animation: roll-across 3s linear forwards;
+      }
+      @keyframes roll-across {
+        from {
+          left: 0;
+        }
+        to {
+          left: calc(100% - 26px);
+        }
+      }
+      .loading-pct {
+        margin-top: 14px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #fff;
+        letter-spacing: 0.05em;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .loading-screen {
+          display: none;
+        }
+      }
+      .ticker {
+        background: var(--paper-2);
+        color: var(--gold-bright);
+        font-family: var(--mono);
+        font-weight: 700;
+        font-size: 13px;
+        padding: 4px 10px;
+        border-bottom: 3px ridge var(--gold-bright);
+        overflow: hidden;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .ticker .track {
+        display: inline-block;
+        animation: marquee-scroll 22s linear infinite;
+      }
+      .pipes-btn {
+        flex: none;
+        font-family: var(--sans);
+        font-size: 11px;
+        font-weight: 700;
+        color: #000;
+        background: var(--gold-bright);
+        border: 2px outset #fff;
+        padding: 3px 8px;
+        cursor: pointer;
+      }
+      .pipes-btn:hover {
+        animation: flash-border 0.3s steps(1) infinite;
+      }
+      .pipes-btn:active {
+        border-style: inset;
+      }
+      .navtable {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--paper-3);
+        border-bottom: 4px double var(--paper-2);
+      }
+      .navtable td {
+        padding: 10px 4px;
+        text-align: center;
+        border-right: 1px solid #999;
+      }
+      .navtable td:last-child {
+        border-right: none;
+      }
+      .navtable a {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 700;
+        color: #0000ee;
+        text-decoration: none;
+        display: inline-block;
+        padding: 2px 4px;
+      }
+      .navtable a:hover {
+        animation: flash-border 0.3s steps(1) infinite;
+      }
+      .flag-cell {
+        width: 56px;
+      }
+      .blink-text {
+        animation: blink 0.8s steps(1) infinite;
+      }
+      .webring {
+        background: var(--paper-2);
+        color: #fff;
+        text-align: center;
+        padding: 16px;
+        font-family: var(--sans);
+        font-size: 12px;
+      }
+      footer {
+        text-align: center;
+        padding: 36px 24px;
+        background: var(--paper-3);
+        border-top: 3px double var(--paper-2);
+      }
+      .footer-motto {
+        font-style: italic;
+        color: var(--red);
+        margin-top: 10px;
+        font-size: 15px;
+      }
+      .copyright {
+        font-family: var(--sans);
+        font-size: 10px;
+        opacity: 0.7;
+        margin-top: 12px;
+        letter-spacing: 0.02em;
+      }
+      @media (max-width: 760px) {
+        .navtable {
+          display: block;
+        }
+        .navtable tr {
+          display: flex;
+          flex-wrap: wrap;
+        }
+        .navtable td {
+          flex: 1 1 33%;
+          border-bottom: 1px solid #999;
+        }
+      }
+    </style>
+  </body>
+</html>

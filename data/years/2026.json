@@ -1,0 +1,40 @@
+{
+    "year": 2026,
+    "venue": "Cambridge Country Club",
+    "location": "England",
+    "date": "2026-08-08",
+    "groupPhoto": "2026-group.jpeg",
+    "course": "cambridge-country-club",
+    "participants": [
+        "chris-ruthven",
+        "patrick-ruthven",
+        "aidan-ruthven",
+        "nicholas-ruthven",
+        "rich-sinclair",
+        "rich-coggins",
+        "simon-norton",
+        "ben-stone",
+        "tim",
+        "neil-h",
+        "danny",
+        "grundy",
+        "matt-ellams",
+        "campbell-hood",
+        "simon-jupp"
+    ],
+    "tankard": {
+        "winner": "aidan-ruthven"
+    },
+    "phallus": {
+        "winner": "rich-sinclair",
+        "decidedByPuttOff": false
+    },
+    "longestDrive": {
+        "winner": "neil-h",
+        "distance": "302 yards"
+    },
+    "closestToPin": {
+        "winner": "rich-sinclair",
+        "distance": "15 yards"
+    }
+}

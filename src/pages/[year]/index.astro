@@ -1,0 +1,733 @@
+---
+import Base from '../../layouts/Base.astro';
+import { loadSite, type YearData } from '../../lib/site';
+import { href, photo } from '../../lib/paths';
+import { images, motto } from '../../config';
+
+export function getStaticPaths() {
+  const site = loadSite();
+  return site.years.map((year) => ({
+    params: { year: String(year.year) },
+    props: { year, site },
+  }));
+}
+
+interface Props {
+  year: YearData;
+  site: ReturnType<typeof loadSite>;
+}
+const { year, site } = Astro.props;
+const years = site.years;
+
+const prettyDate = year.date
+  ? new Date(year.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+  : null;
+
+interface PrizeView {
+  label: string;
+  name: string;
+  points: number | null;
+  puttOff: boolean;
+}
+const prizeView = (label: string, prize: typeof year.tankard): PrizeView | null => {
+  if (!prize) return null;
+  return {
+    label,
+    name: site.players[prize.winner]!.name,
+    points: prize.points ?? year.leaderboard?.find((e) => e.slug === prize.winner)?.totalPoints ?? null,
+    puttOff: prize.decidedByPuttOff ?? false,
+  };
+};
+const prizes = [prizeView('The Tankard', year.tankard), prizeView('The Phallus Trophy', year.phallus)].filter(
+  (p): p is PrizeView => p !== null,
+);
+
+interface SideCompView {
+  label: string;
+  /** Emblem filename under public/photos/, null renders a placeholder. */
+  emblem: string | null;
+  emblemAlt: string;
+  /** Shown in the dashed box while the emblem photo is missing. */
+  emblemPlaceholder: string;
+  name: string | null;
+  distance: string | null;
+}
+const sideComps: SideCompView[] = [
+  {
+    label: 'Longest Drive',
+    emblem: images.longestDrive,
+    emblemAlt: 'A pin flag, the longest drive emblem',
+    emblemPlaceholder: 'Flag',
+    name: year.longestDrive ? site.players[year.longestDrive.winner]!.name : null,
+    distance: year.longestDrive?.distance ?? null,
+  },
+  {
+    label: 'Closest to the Pin',
+    emblem: images.closestToPin,
+    emblemAlt: 'A ball marker, the closest to the pin emblem',
+    emblemPlaceholder: 'Marker',
+    name: year.closestToPin ? site.players[year.closestToPin.winner]!.name : null,
+    distance: year.closestToPin?.distance ?? null,
+  },
+];
+const anySideComp = year.longestDrive !== undefined || year.closestToPin !== undefined;
+
+const board = year.leaderboard;
+const pars = year.courseData?.par ?? null;
+const half = pars ? Math.ceil(pars.length / 2) : 9;
+const rankedCount = board?.filter((e) => e.strokesPosition !== null).length ?? 0;
+const noReturnCount = (board?.length ?? 0) - rankedCount;
+/** Participants with no row at all in the year's scores CSV. */
+const uncarded = board ? year.participants.filter((slug) => !board.some((e) => e.slug === slug)) : [];
+---
+
+<Base title={`${year.year} — The Ruthven Cup`}>
+  <div class="wrap">
+    <div class="years" role="navigation" aria-label="Tournament years">
+      {years.map((y) => (y.year === year.year ? <span class="on">{y.year}</span> : <a href={href(`/${y.year}/`)}>{y.year}</a>))}
+    </div>
+
+    <div class="year-head">
+      <div>
+        <h1 class="reveal">{year.year}<br /><em>{year.venue}</em></h1>
+        <div class="sub reveal">
+          {[prettyDate, year.location, `${year.participants.length} players`].filter(Boolean).join(' · ')}
+        </div>
+      </div>
+      <div class="winners reveal">
+        {
+          prizes.length > 0 ? (
+            prizes.map((p) => (
+              <div class="win">
+                <span class="label">{p.label}</span>
+                <span class="name">
+                  {p.name}
+                  {p.points !== null && <small>{p.points} pts</small>}
+                </span>
+                {p.puttOff && <span class="puttoff">won on the midget putter</span>}
+              </div>
+            ))
+          ) : (
+            <div class="win">
+              <span class="label">Winners</span>
+              <span class="name">— to be engraved —</span>
+            </div>
+          )
+        }
+      </div>
+    </div>
+
+    {
+      year.groupPhoto ? (
+        <img class="group-photo reveal" src={photo(`years/${year.groupPhoto}`)} alt={`The ${year.year} Ruthven Cup field at ${year.venue}`} />
+      ) : (
+        <div class="placeholder-box group-placeholder reveal">Group photo — {year.year}</div>
+      )
+    }
+
+    {
+      anySideComp && (
+        <section class="side-comps reveal">
+          <div class="label">Side competitions</div>
+          <div class="side-grid">
+            {sideComps.map((comp) => (
+              <div class="side-comp">
+                {comp.emblem ? (
+                  <img class="emblem" src={photo(comp.emblem)} alt={comp.emblemAlt} />
+                ) : (
+                  <div class="placeholder-box emblem-placeholder">{comp.emblemPlaceholder}</div>
+                )}
+                <div>
+                  <span class="label">{comp.label}</span>
+                  <span class="name">
+                    {comp.name ?? '— unclaimed —'}
+                    {comp.distance && <small>{comp.distance}</small>}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      board ? (
+        <>
+          <div class="board-head reveal">
+            <h3>The <em>leaderboard</em></h3>
+            <div class="toggle" role="group" aria-label="Score display">
+              <button class="on" data-mode="points" type="button">Stableford</button>
+              <button data-mode="strokes" type="button">Strokes</button>
+            </div>
+          </div>
+
+          <table class="reveal">
+            <thead>
+              <tr>
+                <th class="pos-col" />
+                <th>Player</th>
+                <th class="num">Front 9</th>
+                <th class="num">Back 9</th>
+                <th class="num total-col">
+                  <span class="mode-points">Points</span>
+                  <span class="mode-strokes">Strokes</span>
+                </th>
+              </tr>
+            </thead>
+            {board.map((entry, order) => {
+                const player = site.players[entry.slug]!;
+                const isWinner = entry.slug === year.tankard?.winner || entry.slug === year.phallus?.winner;
+                return (
+                  <tbody class="entry" data-points-order={order} data-strokes-order={entry.strokesOrder}>
+                    <tr class:list={['player-row', { 'winner-row': isWinner }]} data-has-card={entry.card ? '1' : null} tabindex={entry.card ? 0 : undefined}>
+                      <td>
+                        <span class="pos mode-points">{entry.position}</span>
+                        <span class:list={['pos', 'mode-strokes', { nr: entry.strokesPosition === null }]}>
+                          {entry.strokesPosition ?? 'NR'}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="nm">{player.name}</span>
+                        <span class:list={['chip', player.family ? 'fam' : 'guest']}>{player.family ? 'Family' : 'Guest'}</span>
+                        {entry.card && <span class="expand-hint" aria-hidden="true">▾</span>}
+                      </td>
+                      <td class="num">
+                        <span class="mode-points">{entry.front9Points ?? '—'}</span>
+                        <span class="mode-strokes">{entry.front9Strokes ?? '—'}</span>
+                      </td>
+                      <td class="num">
+                        <span class="mode-points">{entry.back9Points ?? '—'}</span>
+                        <span class="mode-strokes">{entry.back9Strokes ?? '—'}</span>
+                      </td>
+                      <td class="pts">
+                        <span class="mode-points">{entry.totalPoints}</span>
+                        <span class="mode-strokes">
+                          {entry.totalStrokes ?? '—'}
+                          {entry.strokesPosition === null && entry.holesRecorded !== null && (
+                            <small>{entry.holesRecorded} holes</small>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                    {entry.card && pars && (
+                      <tr class="cardrow" hidden>
+                        <td colspan="5">
+                          <div class="scorecard">
+                            <span class="label">Full card — strokes per hole, Stableford points beneath</span>
+                            {[0, 1].map((nine) => (
+                              <div class="holes">
+                                {entry.card!.slice(nine * half, (nine + 1) * half).map((hole, i) => {
+                                  const holeNo = nine * half + i;
+                                  const par = pars[holeNo]!;
+                                  return (
+                                    <div
+                                      class:list={[
+                                        'hole',
+                                        { birdie: hole.strokes !== null && hole.strokes < par, blob: hole.strokes === null },
+                                      ]}
+                                    >
+                                      <div class="h">{holeNo + 1} · P{par}</div>
+                                      <div class="s">{hole.strokes ?? '–'}</div>
+                                      <div class="p">{hole.points}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                            <div class="legend">Gold = birdie or better · faded = picked up</div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                );
+              })}
+            {noReturnCount > 0 && rankedCount > 0 && (
+              <tbody class="nr-divider" data-points-order={board.length} data-strokes-order={rankedCount - 0.5}>
+                <tr>
+                  <td colspan="5">
+                    <span class="label">No return — card incomplete, so it cannot be ranked on strokes</span>
+                  </td>
+                </tr>
+              </tbody>
+            )}
+            {uncarded.length > 0 && (
+              <tbody class="uncarded-group" data-points-order={board.length + 1} data-strokes-order={board.length + 1}>
+                {uncarded.map((slug) => (
+                  <tr class="uncarded-row">
+                    <td />
+                    <td>
+                      <span class="nm">{site.players[slug]?.name ?? slug}</span>
+                      <span class:list={['chip', site.players[slug]?.family ? 'fam' : 'guest']}>
+                        {site.players[slug]?.family ? 'Family' : 'Guest'}
+                      </span>
+                    </td>
+                    <td colspan="3" class="not-recorded">Scorecard not recorded</td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </>
+      ) : (
+        <div class="no-scores reveal">
+          <span class="label">Scorecards</span>
+          <p>No cards survive from {year.year} — only the engraving remains. “{motto}”.</p>
+        </div>
+      )
+    }
+  </div>
+
+  <script>
+    // Expand a player's card on row click / Enter.
+    document.querySelectorAll<HTMLTableRowElement>('tr.player-row[data-has-card]').forEach((row) => {
+      const open = () => {
+        const card = row.nextElementSibling as HTMLTableRowElement;
+        card.hidden = !card.hidden;
+        row.classList.toggle('open', !card.hidden);
+      };
+      row.addEventListener('click', open);
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open();
+        }
+      });
+    });
+
+    // Stableford / strokes toggle: swaps the totals column and re-sorts the
+    // board, since the two rankings are different orders entirely. Each player
+    // is their own tbody so an expanded scorecard travels with its row.
+    const table = document.querySelector('table');
+    if (table) {
+      const groups = Array.from(table.querySelectorAll<HTMLTableSectionElement>('tbody[data-points-order]'));
+      const orderBy = (mode: string) => {
+        const attr = mode === 'strokes' ? 'strokesOrder' : 'pointsOrder';
+        for (const group of [...groups].sort((a, b) => Number(a.dataset[attr]) - Number(b.dataset[attr]))) {
+          table.appendChild(group);
+        }
+      };
+      document.querySelectorAll<HTMLButtonElement>('.toggle button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.mode ?? 'points';
+          document.querySelectorAll('.toggle button').forEach((b) => b.classList.toggle('on', b === btn));
+          table.classList.toggle('show-strokes', mode === 'strokes');
+          orderBy(mode);
+        });
+      });
+    }
+  </script>
+
+  <style>
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 32px 110px;
+    }
+    .years {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      border-bottom: 1px solid var(--hairline);
+      padding-top: 20px;
+      overflow-x: auto;
+    }
+    .years a,
+    .years .on {
+      font-weight: 300;
+      text-decoration: none;
+      color: var(--ink);
+      opacity: 0.45;
+      font-size: 22px;
+      padding: 0 18px 16px;
+      border-bottom: 2px solid transparent;
+    }
+    .years a:hover {
+      animation: blink 0.4s steps(1) infinite;
+    }
+    .years .on {
+      opacity: 1;
+      color: var(--gold-bright);
+      border-bottom-color: var(--gold);
+      font-size: 34px;
+      font-style: italic;
+    }
+
+    .year-head {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 40px;
+      align-items: end;
+      padding: 56px 0 40px;
+    }
+    h1 {
+      font-family: Impact, Haettenschweiler, 'Arial Black', var(--sans);
+      font-weight: 900;
+      font-size: clamp(44px, 7vw, 92px);
+      line-height: 0.95;
+      color: var(--red);
+      text-shadow: 2px 2px 0 var(--gold-bright), -1px -1px 0 #000;
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--paper-2);
+      text-shadow: 2px 2px 0 var(--gold-bright);
+    }
+    .sub {
+      font-size: 18px;
+      font-style: italic;
+      opacity: 0.75;
+      margin-top: 14px;
+    }
+    .winners {
+      border-left: 1px solid var(--hairline);
+      padding-left: 32px;
+    }
+    .win {
+      margin-bottom: 22px;
+    }
+    .win .label {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .win .name {
+      font-size: 26px;
+      font-weight: 300;
+    }
+    .win .name small {
+      font-size: 14px;
+      color: var(--gold);
+      font-style: italic;
+      margin-left: 8px;
+    }
+    .puttoff {
+      display: block;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--gold);
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+
+    .group-photo {
+      width: 100%;
+      max-height: 480px;
+      object-fit: cover;
+      border: 1px solid var(--hairline);
+      margin-bottom: 64px;
+    }
+    .group-placeholder {
+      height: 300px;
+      margin-bottom: 64px;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(212, 160, 23, 0.12), transparent 60%),
+        var(--paper-3);
+    }
+
+    .side-comps {
+      margin-bottom: 64px;
+    }
+    .side-comps > .label {
+      display: block;
+      margin-bottom: 18px;
+    }
+    .side-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--hairline);
+      border: 1px solid var(--hairline);
+    }
+    .side-comp {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 26px;
+      background: var(--paper-2);
+    }
+    .side-comp .emblem,
+    .side-comp .emblem-placeholder {
+      width: 64px;
+      height: 64px;
+      flex: none;
+      object-fit: contain;
+    }
+    .side-comp .label {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .side-comp .name {
+      font-size: 26px;
+      font-weight: 300;
+    }
+    .side-comp .name small {
+      font-size: 14px;
+      color: var(--gold);
+      font-style: italic;
+      margin-left: 8px;
+    }
+
+    .board-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .board-head h3 {
+      font-weight: 300;
+      font-size: 34px;
+    }
+    .board-head h3 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .toggle {
+      display: inline-flex;
+      border: 1px solid var(--hairline);
+    }
+    .toggle button {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--ink);
+    }
+    .toggle button:hover {
+      animation: flash-border 0.25s steps(1) infinite;
+    }
+    .toggle button.on {
+      background: var(--gold);
+      color: var(--paper-2);
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--sans);
+      font-size: 13px;
+    }
+    th {
+      font-size: 9px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 500;
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    th.num,
+    td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .pos-col {
+      width: 60px;
+    }
+    .total-col {
+      width: 90px;
+    }
+    td {
+      padding: 14px 10px;
+      border-bottom: 1px solid var(--hairline-faint);
+    }
+    tr.player-row[data-has-card] {
+      cursor: pointer;
+    }
+    tr.player-row[data-has-card]:hover {
+      background: var(--gold-bright);
+    }
+    tr.winner-row td {
+      background: rgba(212, 160, 23, 0.07);
+    }
+    .pos {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--gold);
+      font-style: italic;
+    }
+    .nm {
+      font-family: var(--serif);
+      font-size: 17px;
+      font-weight: 400;
+    }
+    .chip {
+      font-size: 8px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border: 1px solid;
+      margin-left: 10px;
+      vertical-align: 2px;
+    }
+    .chip.fam {
+      color: #d98a94;
+      border-color: rgba(122, 22, 32, 0.7);
+    }
+    .chip.guest {
+      color: var(--gold);
+      border-color: var(--hairline);
+    }
+    .expand-hint {
+      margin-left: 10px;
+      color: var(--gold);
+      opacity: 0.5;
+      display: inline-block;
+      transition: transform 0.3s;
+    }
+    tr.open .expand-hint {
+      transform: rotate(180deg);
+    }
+    td.pts {
+      font-family: var(--serif);
+      font-size: 20px;
+      color: var(--gold-bright);
+      text-align: right;
+    }
+    table .mode-strokes,
+    table.show-strokes .mode-points {
+      display: none;
+    }
+    table.show-strokes .mode-strokes {
+      display: inline-block;
+    }
+    .pos.nr {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      font-style: normal;
+      opacity: 0.6;
+    }
+    td.pts small {
+      display: block;
+      font-family: var(--sans);
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink);
+      opacity: 0.45;
+      margin-top: 2px;
+    }
+    .nr-divider {
+      display: none;
+    }
+    table.show-strokes .nr-divider {
+      display: table-row-group;
+    }
+    .nr-divider td {
+      padding: 22px 10px 10px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .nr-divider .label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      opacity: 0.7;
+    }
+    .uncarded-row td {
+      opacity: 0.5;
+    }
+    .uncarded-row .not-recorded {
+      text-align: left;
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    .cardrow td {
+      padding: 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .scorecard {
+      padding: 22px 10px 30px;
+    }
+    .scorecard .label {
+      display: block;
+      margin-bottom: 14px;
+    }
+    .holes {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .hole {
+      text-align: center;
+      padding: 12px 0;
+      border: 1px solid rgba(212, 160, 23, 0.14);
+    }
+    .hole .h {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      opacity: 0.8;
+    }
+    .hole .s {
+      font-family: var(--serif);
+      font-size: 24px;
+      margin-top: 5px;
+    }
+    .hole .p {
+      font-size: 12px;
+      color: var(--gold);
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+    .hole.birdie .s {
+      color: var(--gold-bright);
+    }
+    .hole.blob .s {
+      opacity: 0.35;
+      font-style: italic;
+    }
+    .legend {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-top: 12px;
+    }
+
+    .no-scores {
+      border: 1px dashed var(--hairline);
+      padding: 44px;
+      text-align: center;
+    }
+    .no-scores p {
+      font-style: italic;
+      opacity: 0.7;
+      margin-top: 12px;
+      font-size: 17px;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        padding: 16px 16px 80px;
+      }
+      .year-head {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .winners {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid var(--hairline);
+        padding-top: 24px;
+      }
+      .side-grid {
+        grid-template-columns: 1fr;
+      }
+      .holes {
+        grid-template-columns: repeat(9, minmax(34px, 1fr));
+        overflow-x: auto;
+      }
+    }
+  </style>
+</Base>

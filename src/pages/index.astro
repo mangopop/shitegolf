@@ -1,0 +1,371 @@
+---
+import Base from '../layouts/Base.astro';
+import Crest from '../components/Crest.astro';
+import Headshot from '../components/Headshot.astro';
+import { loadSite, playerStats } from '../lib/site';
+import { href, photo } from '../lib/paths';
+import { images, motto, established } from '../config';
+
+const site = loadSite();
+const years = site.years;
+const latest = years[years.length - 1]!;
+const venueCount = new Set(years.map((y) => y.venue)).size;
+
+const winnerName = (slug: string | undefined) => (slug ? site.players[slug]!.name : null);
+const latestTop = latest.leaderboard?.[0]?.totalPoints ?? null;
+
+// Player preview: current-year field, ranked by this year's leaderboard position.
+const positionBySlug = new Map(latest.leaderboard?.map((e) => [e.slug, e.position]) ?? []);
+const preview = latest.participants
+  .map((slug) => ({ slug, player: site.players[slug]!, stats: playerStats(site, slug) }))
+  .sort((a, b) => (positionBySlug.get(a.slug) ?? Infinity) - (positionBySlug.get(b.slug) ?? Infinity))
+  .slice(0, 5);
+---
+
+<Base title="The Ruthven Cup" heroNav>
+  <header class="band">
+    <div class="crest-slot"><Crest size={72} /></div>
+    <h1>
+      <span class="golf-ball-spin" aria-hidden="true"></span>
+      THE RUTHVEN CUP
+      <span class="golf-ball-spin" aria-hidden="true"></span>
+    </h1>
+    <div class="flags">
+      <span class="saltire" aria-hidden="true"></span>
+      <span class="thistle" aria-hidden="true"></span>
+      🏴
+      <span class="thistle" aria-hidden="true"></span>
+      <span class="saltire" aria-hidden="true"></span>
+    </div>
+  </header>
+
+  <div class="welcome">
+    <b>Welcome, golfer!</b> You have reached the official home page of <b>The Ruthven Cup</b>, the family's annual Stableford
+    championship, played every year since {established} on the finest fairways Scotland has to offer. Pour
+    yourself a wee dram, and enjoy the site.
+  </div>
+
+  <div class="scoreboard">
+    ⛳ {years.length} YEARS CONTESTED ⛳ {latest.participants.length} GOLFERS IN {latest.year} ⛳{' '}
+    {latestTop !== null ? `${latestTop} PTS WINNING ROUND` : `${venueCount} VENUES PLAYED`} ⛳
+  </div>
+
+  <div class="snapshot tacky-hover">
+    <img src={href('/photos/fun/night-out-golf.gif')} alt="A typical Ruthven Cup night out" />
+    <div class="snapshot-caption">🎉 A typical Ruthven Cup night out 🎉</div>
+  </div>
+
+  <section class="honours" id="honours">
+    <div class="measure">
+      <div class="label reveal"><span class="thistle" aria-hidden="true"></span> 🏆 The Honours Board</div>
+      <h2 class="display reveal">{years.length} years,<br />etched into <em>Ruthven</em> history.</h2>
+
+      <hr class="tee" />
+
+      <table class="scorecard honours-table">
+        <caption>⛳ Every champion since {established}</caption>
+        <tr><th>Year</th><th>Champion</th><th>Venue</th></tr>
+        {
+          [...years].reverse().map((y) => (
+            <tr>
+              <td><a href={href(`/${y.year}/`)}>{y.year}</a></td>
+              <td>
+                {winnerName(y.tankard?.winner) ?? '— to be engraved —'}
+                {y.year === established && ' (inaugural champion)'}
+                {y.year === latest.year && ' (reigning champion)'}
+                {y.tankard?.decidedByPuttOff && ' — won on the midget putter'}
+              </td>
+              <td>{y.venue}</td>
+            </tr>
+          ))
+        }
+      </table>
+    </div>
+  </section>
+
+  <section class="players" id="players">
+    <div class="measure">
+      <div class="label reveal"><span class="thistle" aria-hidden="true"></span> ⛳ The Field — {latest.year}</div>
+      <h2 class="display reveal">Family, friends,<br />and <em>rivals.</em></h2>
+      <p class="lede reveal">This year's line-up. See the full roster for everyone who's ever teed it up.</p>
+
+      <hr class="tee" />
+
+      <div class="grid">
+        {
+          preview.map(({ slug, player, stats }) => {
+            const wins = stats.tankardWins.length + stats.phallusWins.length;
+            return (
+              <a class:list={['player', 'reveal', 'tacky-hover', { champ: wins > 0 }]} href={href(`/players/${slug}/`)}>
+                <div class="ph"><Headshot player={player} /></div>
+                <div class="meta">
+                  <span class="name">{wins > 0 ? '🏆 ' : '⛳ '}{player.name}</span>
+                  <span class="tag">
+                    {wins > 0 ? `${wins}× champion · ` : ''}
+                    {player.family ? 'Family' : 'Guest'} · Since {player.since}
+                  </span>
+                </div>
+              </a>
+            );
+          })
+        }
+      </div>
+      <div class="all-link reveal"><a href={href('/players/')}>→ All players &amp; bios</a></div>
+    </div>
+  </section>
+
+  <section class="trophies" id="trophies">
+    <div class="measure">
+      <div class="label reveal"><span class="thistle" aria-hidden="true"></span> 🚩 The Trophies</div>
+      <h2 class="display reveal">Two prizes,<br />one <em>Cup</em>, one very sore <em>arse.</em></h2>
+
+      <hr class="tee" />
+
+      <div class="trophy-grid">
+        <div class="trophy reveal tacky-hover">
+          {
+            images.tankard ? (
+              <img class="trophy-img" src={photo(images.tankard)} alt="The Ruthven Cup Tankard" />
+            ) : (
+              <div class="placeholder-box plinth">🏆<br />Tankard photo</div>
+            )
+          }
+          <h3>The <em>Tankard</em></h3>
+          <p>The Ruthven families prestigous Cup. Engraved each year with the winner's name, next year Nicholas, next year...</p>
+        </div>
+        <div class="trophy reveal tacky-hover">
+          {
+            images.phallus ? (
+              <img class="trophy-img" src={photo(images.phallus)} alt="The Phallus Trophy" />
+            ) : (
+              <div class="placeholder-box plinth">🥇<br />Trophy photo</div>
+            )
+          }
+          <h3>The <em>Phallus Trophy</em></h3>
+          <p>
+            The best of the rest. "The big one" Coveted, feared, seen more action that Elton John's dildo. Ensure bleached and
+            microwaved for 30 minutes before receiving
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .band {
+      text-align: center;
+      padding: 40px 24px 24px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--paper-2) 0 8px,
+        #0d7536 8px 16px,
+        var(--red) 16px 18px,
+        #0d7536 18px 26px
+      );
+    }
+    .crest-slot {
+      margin: 0 auto 14px;
+    }
+    h1 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      font-family: Impact, Haettenschweiler, 'Arial Black', var(--sans);
+      font-weight: 900;
+      font-size: clamp(32px, 6vw, 56px);
+      color: var(--gold-bright);
+      text-shadow: 3px 3px 0 #000, -2px -2px 0 var(--red), 2px -2px 0 #000, -2px 2px 0 #000;
+      letter-spacing: 1px;
+    }
+    .flags {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 24px;
+      margin-top: 10px;
+    }
+    .welcome {
+      max-width: 900px;
+      margin: 28px auto;
+      background: var(--paper-3);
+      border: 3px solid var(--red);
+      padding: 18px 22px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .welcome b {
+      color: var(--red);
+    }
+    .scoreboard {
+      max-width: 900px;
+      margin: 0 auto 40px;
+      background: #000;
+      color: #ff3b3b;
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 12px 16px;
+      border: 4px ridge #c0c0c0;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .snapshot {
+      max-width: 260px;
+      margin: 0 auto 44px;
+      background: #fff;
+      padding: 10px 10px 34px;
+      border: 3px solid #000;
+      box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+      transform: rotate(-3deg);
+    }
+    .snapshot img {
+      width: 100%;
+      display: block;
+      border: 2px solid var(--paper-2);
+    }
+    .snapshot-caption {
+      margin-top: 10px;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      color: #000;
+    }
+    .honours-table td:first-child,
+    .honours-table th:first-child {
+      white-space: nowrap;
+    }
+    .lede {
+      font-size: 16px;
+      opacity: 0.85;
+      max-width: 520px;
+      margin: -20px 0 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .player {
+      aspect-ratio: 3 / 4;
+      position: relative;
+      overflow: hidden;
+      background: var(--paper-2);
+      display: flex;
+      align-items: flex-end;
+      text-decoration: none;
+      border: 6px solid var(--paper-2);
+    }
+    .player:nth-child(4n+1) {
+      transform: rotate(-3deg);
+      border-color: var(--red);
+    }
+    .player:nth-child(4n+2) {
+      transform: rotate(2deg);
+      border-color: #0000ee;
+    }
+    .player:nth-child(4n+3) {
+      transform: rotate(-1.5deg);
+      border-style: dashed;
+    }
+    .player:nth-child(4n) {
+      transform: rotate(3deg);
+      border-color: var(--gold);
+    }
+    .player .ph {
+      position: absolute;
+      inset: 0;
+      filter: contrast(1.35) saturate(1.6) hue-rotate(8deg);
+    }
+    .player .meta {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(transparent, rgba(6, 18, 12, 0.92) 55%);
+    }
+    .player .meta .name {
+      font-size: 16px;
+      font-weight: 700;
+      display: block;
+      color: #fff;
+      font-family: var(--sans);
+    }
+    .player .meta .tag {
+      font-family: var(--sans);
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      display: block;
+      margin-top: 4px;
+    }
+    .player.champ {
+      border-color: var(--gold);
+    }
+    .all-link {
+      margin-top: 20px;
+    }
+    .all-link a {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      color: #0000ee;
+    }
+    .trophy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .trophy {
+      padding: 40px 32px;
+      text-align: center;
+      border: 5px ridge var(--paper-2);
+      background: var(--paper-3);
+    }
+    .trophy:nth-child(1) {
+      transform: rotate(-1.5deg);
+    }
+    .trophy:nth-child(2) {
+      transform: rotate(1.5deg);
+    }
+    .plinth {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 20px;
+      font-size: 20px;
+      line-height: 1.4;
+    }
+    .trophy-img {
+      max-height: 180px;
+      width: auto;
+      margin: 0 auto 24px;
+    }
+    .trophy h3 {
+      font-family: Impact, Haettenschweiler, 'Arial Black', var(--sans);
+      font-size: 26px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      color: var(--paper-2);
+      text-shadow: 1px 1px 0 var(--gold-bright);
+    }
+    .trophy h3 em {
+      font-style: normal;
+      color: var(--red);
+    }
+    .trophy p {
+      font-size: 14px;
+      opacity: 0.85;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 760px) {
+      .trophy-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</Base>

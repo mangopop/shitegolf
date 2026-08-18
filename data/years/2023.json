@@ -1,0 +1,8 @@
+{
+  "year": 2023,
+  "venue": "Ratho Park",
+  "location": "Scotland",
+  "course": "ratho-park",
+  "participants": ["chris-ruthven", "patrick-ruthven", "aidan-ruthven", "nicholas-ruthven"],
+  "tankard": { "winner": "aidan-ruthven" }
+}

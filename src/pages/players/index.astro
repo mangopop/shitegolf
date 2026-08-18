@@ -1,0 +1,141 @@
+---
+import Base from '../../layouts/Base.astro';
+import Headshot from '../../components/Headshot.astro';
+import { loadSite, playerStats } from '../../lib/site';
+import { href } from '../../lib/paths';
+
+const site = loadSite();
+const players = Object.entries(site.players)
+  .map(([slug, player]) => ({ slug, player, stats: playerStats(site, slug) }))
+  .sort((a, b) => {
+    if (a.player.family !== b.player.family) return a.player.family ? -1 : 1;
+    return a.player.name.localeCompare(b.player.name);
+  });
+const family = players.filter((p) => p.player.family);
+const guests = players.filter((p) => !p.player.family);
+---
+
+<Base title="The Players — The Ruthven Cup">
+  <section>
+    <div class="measure">
+      <div class="label reveal"><span class="thistle" aria-hidden="true"></span> The Field</div>
+      <h2 class="display reveal">Family, friends,<br />and <em>rivals.</em></h2>
+
+      {
+        [
+          { heading: 'The Family', list: family },
+          { heading: 'The Guests', list: guests },
+        ].map(
+          ({ heading, list }) =>
+            list.length > 0 && (
+              <div class="group">
+                <h3 class="label reveal">{heading}</h3>
+                <div class="grid">
+                  {list.map(({ slug, player, stats }) => {
+                    const wins = stats.tankardWins.length + stats.phallusWins.length;
+                    return (
+                      <a class:list={['player', 'reveal', 'tacky-hover', { champ: wins > 0 }]} href={href(`/players/${slug}/`)}>
+                        <div class="ph">
+                          <Headshot player={player} />
+                        </div>
+                        <div class="meta">
+                          <span class="name">{player.name}</span>
+                          <span class="tag">
+                            {wins > 0 ? `${wins}× champion · ` : ''}Since {player.since}
+                          </span>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            ),
+        )
+      }
+    </div>
+  </section>
+
+  <style>
+    .group {
+      margin-bottom: 64px;
+    }
+    .group h3 {
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 12px;
+    }
+    .player {
+      aspect-ratio: 3 / 4;
+      position: relative;
+      overflow: hidden;
+      background: #103021;
+      display: flex;
+      align-items: flex-end;
+      text-decoration: none;
+      border: 6px solid var(--paper-2);
+    }
+    .player:nth-child(4n+1) {
+      transform: rotate(-3deg);
+      border-color: var(--red);
+    }
+    .player:nth-child(4n+2) {
+      transform: rotate(2deg);
+      border-color: #0000ee;
+    }
+    .player:nth-child(4n+3) {
+      transform: rotate(-1.5deg);
+      border-style: dashed;
+    }
+    .player:nth-child(4n) {
+      transform: rotate(3deg);
+      border-color: var(--gold);
+    }
+    .player .ph {
+      position: absolute;
+      inset: 0;
+      filter: contrast(1.35) saturate(1.6) hue-rotate(8deg);
+    }
+    .player .meta {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(transparent, rgba(6, 18, 12, 0.92) 55%);
+    }
+    .player .meta .name {
+      font-size: 19px;
+      font-weight: 700;
+      display: block;
+      color: #fff;
+      font-family: var(--sans);
+    }
+    .player .meta .tag {
+      font-family: var(--sans);
+      font-size: 8px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      display: block;
+      margin-top: 5px;
+    }
+    .player.champ::before {
+      content: '★';
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-bright);
+      z-index: 3;
+      font-size: 14px;
+      animation: blink 0.6s steps(1) infinite;
+    }
+  </style>
+</Base>
