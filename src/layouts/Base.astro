@@ -43,7 +43,9 @@ const year = new Date().getFullYear();
       id="bagpipes"
       src="https://www.bagpipes-and-celtic-music.com/Hornpipe%20&%20%20Jig%20-%20PIPES.mp3"
       loop
-      preload="none"
+      autoplay
+      muted
+      preload="auto"
     ></audio>
     <audio id="transfer-noise" src={href('/audio/transfer-noise.mp3')} preload="auto"></audio>
 
