@@ -1,7 +1,12 @@
 ---
-// A joke "entry gate" for the homepage: an unwinnable mini putting game.
-// The ball is physically incapable of going in - however you aim, it lips
-// out - and the only way through is to click "I give up" and admit defeat.
+// A joke "entry gate" for the homepage: a genuinely winnable mini putting
+// game. Sink a putt - gently, on line - and it drops for real. Otherwise
+// there's always "I give up" for the impatient.
+import { photo } from '../lib/paths';
+
+// A small resized copy of the trophy photo (public/photos/cup-icon.png,
+// 80x64) - the obstacle needs an icon-sized image, not the full trophy shot.
+const cupIconSrc = photo('cup-icon.png');
 ---
 
 <div class="golfgate" id="golfgate" hidden>
@@ -9,7 +14,7 @@
     <div class="golfgate-title blink-text">⛳ PROVE YOU'RE WORTHY OF SHITEGOLF.CO.UK ⛳</div>
     <div class="golfgate-sub" id="golfgate-sub">Sink a putt to enter. Click and drag from the ball to aim, then let go.</div>
 
-    <canvas id="golfgate-canvas" width="320" height="420" aria-label="An unwinnable mini golf hole"></canvas>
+    <canvas id="golfgate-canvas" width="320" height="420" aria-label="A mini golf hole" data-cup-src={cupIconSrc}></canvas>
 
     <div class="golfgate-stats">
       Attempts: <span id="golfgate-attempts">0</span> · Sunk: <span id="golfgate-sunk">0</span>
@@ -31,7 +36,7 @@
 
   const STORAGE_KEY = 'shitegolf-gate-passed';
 
-  if (gate && canvas && subEl && attemptsEl && quitBtn) {
+  if (gate && canvas && subEl && attemptsEl && sunkEl && quitBtn) {
     if (sessionStorage.getItem(STORAGE_KEY)) {
       gate.remove();
     } else {
@@ -42,9 +47,17 @@
       const W = canvas.width;
       const H = canvas.height;
       const HOLE = { x: W / 2, y: 64, r: 10 };
-      const FIELD_R = 54; // radius at which the hole starts gently bending the ball's path
-      const MIN_D = HOLE.r + 9; // closest the ball is ever allowed to get to the cup centre
+      const FIELD_R = 30; // radius at which the hole gently pulls the ball in
+      const CAPTURE_SPEED = 3.2; // must be rolling this slow (or slower) to drop
       const START = { x: W / 2, y: H - 48 };
+      const BALL_R = 7;
+      const OBSTACLE = { x: W / 2, y: H / 2, r: 20 }; // sits dead centre, blocking a straight putt
+      const OBSTACLE_W = 46; // drawn small - it's an obstacle, not the trophy shot
+      const OBSTACLE_H = 37;
+      const cupIcon = new Image();
+      cupIcon.src = canvas.dataset.cupSrc ?? '';
+      cupIcon.addEventListener('load', () => render(), { once: true });
+      let won = false;
 
       let ball = { x: START.x, y: START.y, vx: 0, vy: 0 };
       let moving = false;
@@ -103,9 +116,14 @@
         ctx.fill();
       }
 
+      function drawObstacle() {
+        if (!cupIcon.complete || cupIcon.naturalWidth === 0) return;
+        ctx.drawImage(cupIcon, OBSTACLE.x - OBSTACLE_W / 2, OBSTACLE.y - OBSTACLE_H / 2, OBSTACLE_W, OBSTACLE_H);
+      }
+
       function drawBall() {
         ctx.beginPath();
-        ctx.arc(ball.x, ball.y, 7, 0, Math.PI * 2);
+        ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
         ctx.fillStyle = '#f4f0d8';
         ctx.strokeStyle = 'rgba(0,0,0,0.4)';
         ctx.lineWidth = 1;
@@ -127,6 +145,7 @@
 
       function render() {
         drawGreen();
+        drawObstacle();
         drawHole();
         drawAim();
         drawBall();
@@ -179,23 +198,15 @@
       });
 
       function step() {
-        // The hole quietly bends the ball's path as it passes nearby, rather
-        // than deflecting it on contact - a gentle curve that reads as a
-        // near-miss instead of a bounce off an invisible wall.
-        const dhx = ball.x - HOLE.x;
-        const dhy = ball.y - HOLE.y;
-        const dh = Math.hypot(dhx, dhy);
-        if (dh < FIELD_R && dh > 0.01) {
-          const nx = dhx / dh;
-          const ny = dhy / dh;
-          const tx = -ny;
-          const ty = nx;
-          const strength = 1 - dh / FIELD_R;
-          const sign = ball.vx * tx + ball.vy * ty >= 0 ? 1 : -1;
-          const curveAccel = strength * strength * 0.5;
-          const pullAccel = strength * 0.1;
-          ball.vx += tx * sign * curveAccel - nx * pullAccel;
-          ball.vy += ty * sign * curveAccel - ny * pullAccel;
+        // The hole gently pulls the ball in when it passes close by, same
+        // as a genuine cup would.
+        const dhx0 = ball.x - HOLE.x;
+        const dhy0 = ball.y - HOLE.y;
+        const dh0 = Math.hypot(dhx0, dhy0);
+        if (dh0 < FIELD_R && dh0 > 0.01) {
+          const pull = (1 - dh0 / FIELD_R) * 0.12;
+          ball.vx -= (dhx0 / dh0) * pull;
+          ball.vy -= (dhy0 / dh0) * pull;
         }
 
         // Friction.
@@ -222,24 +233,39 @@
           ball.vy *= -0.7;
         }
 
-        // Hard floor: whatever happens above, the ball can never actually
-        // reach the cup - it grazes the rim and keeps rolling.
-        const rhx = ball.x - HOLE.x;
-        const rhy = ball.y - HOLE.y;
-        const rh = Math.hypot(rhx, rhy);
-        if (rh < MIN_D && rh > 0.01) {
-          const nx = rhx / rh;
-          const ny = rhy / rh;
-          ball.x = HOLE.x + nx * MIN_D;
-          ball.y = HOLE.y + ny * MIN_D;
+        // Obstacle collision: a solid boulder dead centre, so a straight
+        // putt from the tee just bounces off it instead of running true.
+        const obx = ball.x - OBSTACLE.x;
+        const oby = ball.y - OBSTACLE.y;
+        const obd = Math.hypot(obx, oby);
+        const obMinD = OBSTACLE.r + BALL_R;
+        if (obd < obMinD && obd > 0.01) {
+          const nx = obx / obd;
+          const ny = oby / obd;
+          ball.x = OBSTACLE.x + nx * obMinD;
+          ball.y = OBSTACLE.y + ny * obMinD;
           const vn = ball.vx * nx + ball.vy * ny;
           if (vn < 0) {
-            ball.vx -= vn * nx;
-            ball.vy -= vn * ny;
+            ball.vx -= 1.6 * vn * nx;
+            ball.vy -= 1.6 * vn * ny;
           }
         }
 
         const speed = Math.hypot(ball.vx, ball.vy);
+
+        // Capture: close enough to the cup and rolling slowly enough to
+        // actually drop, same as a real hole would.
+        const dhx = ball.x - HOLE.x;
+        const dhy = ball.y - HOLE.y;
+        const dh = Math.hypot(dhx, dhy);
+        if (dh < HOLE.r && speed < CAPTURE_SPEED) {
+          ball.x = HOLE.x;
+          ball.y = HOLE.y;
+          render();
+          winGame();
+          return;
+        }
+
         render();
 
         if (speed > 0.15) {
@@ -252,15 +278,27 @@
         }
       }
 
-      render();
-
-      quitBtn.addEventListener('click', () => {
+      function passGate() {
         sessionStorage.setItem(STORAGE_KEY, '1');
         cancelAnimationFrame(raf);
-        gate.classList.add('hide');
+        gate!.classList.add('hide');
         document.body.style.overflow = '';
-        setTimeout(() => gate.remove(), 400);
-      });
+        setTimeout(() => gate!.remove(), 400);
+      }
+
+      function winGame() {
+        if (won) return;
+        won = true;
+        moving = false;
+        cancelAnimationFrame(raf);
+        sunkEl!.textContent = String(Number(sunkEl!.textContent) + 1);
+        subEl!.textContent = 'IN THE CUP. ACTUALLY. WELL PLAYED.';
+        setTimeout(passGate, reduceMotion() ? 0 : 1200);
+      }
+
+      render();
+
+      quitBtn.addEventListener('click', passGate);
     }
   }
 </script>
