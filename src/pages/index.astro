@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Crest from '../components/Crest.astro';
 import Headshot from '../components/Headshot.astro';
 import MiniGolfGate from '../components/MiniGolfGate.astro';
+import ShitePlayerOfWeek from '../components/ShitePlayerOfWeek.astro';
 import { loadSite, playerStats } from '../lib/site';
 import { href, photo } from '../lib/paths';
 import { images, motto, established } from '../config';
@@ -25,6 +26,7 @@ const preview = latest.participants
 
 <Base title="The Ruthven Cup" heroNav>
   <MiniGolfGate />
+  <ShitePlayerOfWeek players={site.players} participantSlugs={latest.participants} />
 
   <header class="band">
     <div class="crest-slot"><Crest size={72} /></div>
