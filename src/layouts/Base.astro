@@ -158,11 +158,23 @@ const year = new Date().getFullYear();
     </script>
 
     <script>
-      // Fake hit counter, because a real one would require a backend and effort.
+      // A real hit counter - Abacus (abacus.jasoncameron.dev) is a free,
+      // no-signup counter API: GET /hit/<ns>/<key> increments and returns
+      // the current total. Falls back to a fake number if it's unreachable.
+      // Dev/preview traffic hits a separate "dev" key so poking around
+      // locally doesn't inflate the real site's count.
       const counter = document.getElementById('hit-counter');
       if (counter) {
-        const base = 1337 + Math.floor(Math.random() * 8000);
-        counter.textContent = String(base).padStart(6, '0');
+        const key = location.hostname === 'shitegolf.co.uk' ? 'homepage' : 'dev';
+        fetch(`https://abacus.jasoncameron.dev/hit/shitegolf.co.uk/${key}`)
+          .then((res) => res.json())
+          .then((data) => {
+            counter.textContent = String(data.value).padStart(6, '0');
+          })
+          .catch(() => {
+            const base = 1337 + Math.floor(Math.random() * 8000);
+            counter.textContent = String(base).padStart(6, '0');
+          });
       }
     </script>
 
